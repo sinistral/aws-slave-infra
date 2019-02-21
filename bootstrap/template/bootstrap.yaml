@@ -1,0 +1,69 @@
+
+---
+AWSTemplateFormatVersion: 2010-09-09
+Description: Base infrastructure shared by all deployments in an AWS account.
+
+  # This template is intended to be used to bootstrap an account, installing
+  # only the most essential resources that are needed for the deployment of
+  # other CloudFormation stacks.  Because it is the first, there is a
+  # chicken-and-egg problem w.r.t. full automation via CodePipeline
+  # (specifically the S3 buckets needed to store artifacts).
+  #
+  # As such:
+  # * it will be run by hand (see the associated Makefile)
+  # * it should be kept small and not depend on nested stacks (as these
+  #   necessitate a more complicated build process).
+
+Resources:
+
+  BuildArtifactS3Bucket:
+    Type: AWS::S3::Bucket
+
+  LocalBuildArtifactS3Bucket:
+    Type: AWS::S3::Bucket
+
+  WheelTrustRole:
+    Type: AWS::IAM::Role
+    Description: >-
+      Administrator role that may be assumed by authorised Principals.
+    Properties:
+      RoleName: wheel
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Action: sts:AssumeRole
+            Effect: Allow
+            Principal:
+              AWS: arn:aws:iam::249376517301:root
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AdministratorAccess
+
+Outputs:
+
+  BuildArtifactS3BucketArn:
+    Description: >-
+      S3 bucket used to store Code{Pipeline,Build} artifacts.
+    Value: !GetAtt [BuildArtifactS3Bucket, Arn]
+    Export:
+      Name: !Sub ${AWS::StackName}:BuildArtifactS3BucketArn
+
+  BuildArtifactS3BucketName:
+    Description: >-
+      S3 bucket used to store Code{Pipeline,Build} artifacts.
+    Value: !Ref BuildArtifactS3Bucket
+    Export:
+      Name: !Sub ${AWS::StackName}:BuildArtifactS3BucketName
+
+  LocalBuildArtifactS3BucketArn:
+    Description: >-
+      S3 bucket used to artifacts produced by local (CodeBuild) builds.
+    Value: !GetAtt [LocalBuildArtifactS3Bucket, Arn]
+    Export:
+      Name: !Sub ${AWS::StackName}:LocalBuildArtifactS3BucketArn
+
+  LocalBuildArtifactS3BucketName:
+    Description: >-
+      S3 bucket used to artifacts produced by local (CodeBuild) builds.
+    Value: !Ref LocalBuildArtifactS3Bucket
+    Export:
+      Name: !Sub ${AWS::StackName}:LocalBuildArtifactS3BucketName
